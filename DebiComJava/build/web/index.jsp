@@ -42,11 +42,11 @@ ArrayList<TipoIdentificaciones> tipos
                 </button>
 
                 <div class="tab-buttons">
-                    <button class="tab-btn active" type="button" onclick="switchTab('login')">
+                    <button class="tab-btn active" type="button" onclick="switchTab('login', this)">
                         Iniciar Sesion
                     </button>
 
-                    <button class="tab-btn" type="button" onclick="switchTab('register')">
+                    <button class="tab-btn" type="button" onclick="switchTab('register', this)">
                         Registro
                     </button>
                 </div>

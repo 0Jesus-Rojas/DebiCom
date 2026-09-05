@@ -1,11 +1,8 @@
 package Servlet;
 
-import Controlador.Conexion;
+import Controlador.UsuarioDAO;
+import Modelo.Usuarios;
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -13,7 +10,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 @WebServlet(name = "loginServlet", urlPatterns = {"/login"})
-public class loginServlet extends HttpServlet {
+public class LoginServlet extends HttpServlet {
 
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -23,35 +20,35 @@ public class loginServlet extends HttpServlet {
 
         // Validar que los parámetros no vengan nulos
         if (correo == null || clave == null || correo.trim().isEmpty() || clave.trim().isEmpty()) {
-            response.sendRedirect("index.html");
+            response.sendRedirect(request.getContextPath() + "/index.jsp");
             return;
         }
 
-        Conexion conect = new Conexion();
-        String querySql = "SELECT * FROM usuarios WHERE correo = ? AND password = ?";
-
-        try (Connection conn = conect.getconn();
-             PreparedStatement ps = conn.prepareStatement(querySql)) {
-            
-            ps.setString(1, correo);
-            ps.setString(2, clave);
-
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    String nombre = rs.getString("nombre");
-                    String apellido = rs.getString("apellido");
-
-                    request.getSession().setAttribute("correo", correo);
-                    request.getSession().setAttribute("nombre", nombre);
-                    request.getSession().setAttribute("apellido", apellido);
-
-                    response.sendRedirect("panel.jsp");
-                } else {
-                    response.sendRedirect("index.html");
-                }
+        UsuarioDAO usuarioDAO = new UsuarioDAO();
+        try {
+            Usuarios usuario = usuarioDAO.autenticar(correo, clave);
+            if (usuario == null) {
+                response.sendRedirect(request.getContextPath() + "/index.jsp");
+                return;
             }
-        } catch (SQLException e) {
-            e.printStackTrace(); // Revisa los logs de tu servidor para ver fallos
+
+            var session = request.getSession(true);
+            session.setAttribute("idUsuario", usuario.getIdUsuario());
+            session.setAttribute("correo", usuario.getCorreo());
+            session.setAttribute("nombre", usuario.getNombre());
+            session.setAttribute("apellido", usuario.getApellido());
+            session.setAttribute("idRol", usuario.getIdRol());
+
+            Integer idCliente = new UsuarioDAO().obtenerIdClientePorUsuario(usuario.getIdUsuario());
+            if (idCliente != null) session.setAttribute("idCliente", idCliente);
+
+            if (usuario.getIdRol() == 1 || usuario.getIdRol() == 2 || usuario.getIdRol() == 3) {
+                response.sendRedirect(request.getContextPath() + "/vendedor/dashboard");
+            } else {
+                response.sendRedirect(request.getContextPath() + "/comprador/estado-credito");
+            }
+        } catch (RuntimeException e) {
+            log("Error de autenticación", e);
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Error de base de datos.");
         }
     }

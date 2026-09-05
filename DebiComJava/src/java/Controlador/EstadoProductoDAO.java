@@ -9,6 +9,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  *
@@ -16,6 +18,25 @@ import java.sql.SQLException;
  */
 public class EstadoProductoDAO {
     private Conexion conect = new Conexion();
+
+
+    public List<EstadosProducto> listarEstadosProducto() {
+        List<EstadosProducto> estados = new ArrayList<>();
+        String sql = "SELECT id_estado_producto, nombre_estado FROM estados_producto ORDER BY id_estado_producto";
+        try (Connection conn = conect.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                EstadosProducto estado = new EstadosProducto();
+                estado.setIdEstadoProducto(rs.getInt("id_estado_producto"));
+                estado.setNomrebEstadpo(rs.getString("nombre_estado"));
+                estados.add(estado);
+            }
+            return estados;
+        } catch (SQLException e) {
+            throw new IllegalStateException("No fue posible consultar los estados de producto.", e);
+        }
+    }
 
     // Método para consultar un Estado de Producto por su ID
     public EstadosProducto consultarEstadoProducto(int idEstadoProducto) {

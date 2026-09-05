@@ -1,10 +1,9 @@
 package Servlet;
 
-import Controlador.Conexion;
+import Controlador.UsuarioDAO;
+import Modelo.Usuarios;
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
+import java.sql.Date;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -14,88 +13,90 @@ import jakarta.servlet.http.HttpServletResponse;
 @WebServlet(name = "RegisterServlet", urlPatterns = {"/register"})
 public class RegisterServlet extends HttpServlet {
 
-    protected void processRequest(HttpServletRequest request, HttpServletResponse response)
+    private final UsuarioDAO usuarioDAO = new UsuarioDAO();
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        
-        // Obtener parámetros del formulario
+
+        request.setCharacterEncoding("UTF-8");
+
         String nombre = request.getParameter("nombre");
         String apellido = request.getParameter("apellido");
-        String tipoIdStr = request.getParameter("tipo_id");
-        String numId = request.getParameter("num_id");
-        String fechaNac = request.getParameter("fecha_nac");
+        String tipo = request.getParameter("tipo_id");
+        String identificacion = request.getParameter("num_id");
+        String fecha = request.getParameter("fecha_nac");
         String telefono = request.getParameter("telefono");
         String direccion = request.getParameter("direccion");
         String correo = request.getParameter("correo");
         String clave = request.getParameter("clave");
-        String autorizaStr = request.getParameter("autoriza");
 
-        // Validar campos obligatorios
-        if (nombre == null || apellido == null || tipoIdStr == null || numId == null ||
-            fechaNac == null || correo == null || clave == null ||
-            nombre.trim().isEmpty() || apellido.trim().isEmpty() || 
-            correo.trim().isEmpty() || clave.trim().isEmpty()) {
-            
-            response.sendRedirect("index.html");
+        boolean autoriza = "true".equalsIgnoreCase(request.getParameter("autoriza"))
+                || "on".equalsIgnoreCase(request.getParameter("autoriza"));
+
+        if (blank(nombre) || blank(apellido) || blank(tipo) || blank(identificacion)
+                || blank(fecha) || blank(correo) || blank(clave)) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST,
+                    "Todos los campos obligatorios deben estar diligenciados.");
             return;
         }
 
-        int idTipoIdentificacion = Integer.parseInt(tipoIdStr);
-        int autorizaDatos = (autorizaStr != null && (autorizaStr.equals("true") || autorizaStr.equals("on"))) ? 1 : 0;
+        final int idTipo;
+        final Date fechaNacimiento;
 
-        Conexion conect = new Conexion();
+        try {
+            idTipo = Integer.parseInt(tipo);
+            fechaNacimiento = Date.valueOf(fecha);
+        } catch (IllegalArgumentException e) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST,
+                    "Tipo de identificación o fecha de nacimiento inválidos.");
+            return;
+        }
 
-        // Consulta SQL para insertar el nuevo usuario
-        // Nota: id_usuario es AI PK, fecha_registro usa NOW(), y fecha_vencimiento_clave se asigna a 6 meses
-        String querySql = "INSERT INTO usuarios ("
-                + "nombre, apellido, identificacion, fecha_nacimiento, correo, telefono, "
-                + "direccion, password, fecha_vencimiento_clave, autoriza_datos, "
-                + "id_tipo_identificacion, fecha_registro"
-                + ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 180 DAY), ?, ?, NOW())";
+        Usuarios usuario = new Usuarios();
+        usuario.setNombre(nombre.trim());
+        usuario.setApellido(apellido.trim());
+        usuario.setIdentificacion(identificacion.trim());
+        usuario.setFechaNacimiento(fechaNacimiento);
+        usuario.setCorreo(correo.trim());
+        usuario.setTelefono(telefono == null ? "" : telefono.trim());
+        usuario.setDireccion(direccion == null ? "" : direccion.trim());
+        usuario.setPassword(clave);
+        usuario.setAutorizaDatos(autoriza);
+        usuario.setIdTipoIdentificacion(idTipo);
+        usuario.setIdRol(0);
 
-        try (Connection conn = conect.getconn();
-             PreparedStatement ps = conn.prepareStatement(querySql)) {
+        try {
+            /*
+             * UsuarioDAO.registrarUsuarioComoComprador() crea usuarios y clientes
+             * dentro de la misma transacción. Si falla clientes, usuarios se revierte.
+             */
+            int idUsuario = usuarioDAO.registrarUsuarioComoComprador(usuario);
 
-            ps.setString(1, nombre);
-            ps.setString(2, apellido);
-            ps.setString(3, numId);
-            ps.setString(4, fechaNac); // Formato de input HTML date es YYYY-MM-DD
-            ps.setString(5, correo);
-            ps.setString(6, telefono);
-            ps.setString(7, direccion);
-            ps.setString(8, clave);
-            ps.setInt(9, autorizaDatos);
-            ps.setInt(10, idTipoIdentificacion);
+            request.getSession(true).setAttribute("idUsuario", idUsuario);
+            request.getSession().setAttribute("correo", usuario.getCorreo());
+            request.getSession().setAttribute("nombre", usuario.getNombre());
+            request.getSession().setAttribute("apellido", usuario.getApellido());
+            request.getSession().setAttribute("idRol", 0);
+            request.getSession().setAttribute("idCliente",
+                    usuarioDAO.obtenerIdClientePorUsuario(idUsuario));
 
-            int rowsAffected = ps.executeUpdate();
+            response.sendRedirect(request.getContextPath() + "/comprador/estado-credito");
 
-            if (rowsAffected > 0) {
-                // Iniciar sesión tras registro exitoso
-                request.getSession().setAttribute("correo", correo);
-                response.sendRedirect("panel.jsp");
-            } else {
-                response.sendRedirect("index.html");
-            }
-
-        } catch (SQLException e) {
-            e.printStackTrace(); // Revisa los logs de tu servidor para ver fallos
-            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Error al registrar el usuario en la base de datos.");
+        } catch (RuntimeException e) {
+            log("Error registrando usuario/comprador", e);
+            response.sendError(HttpServletResponse.SC_CONFLICT,
+                    "No fue posible registrar el usuario. Verifique que el correo y la identificación no estén registrados.");
         }
     }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        processRequest(request, response);
+        response.sendRedirect(request.getContextPath() + "/index.jsp");
     }
 
-    @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        processRequest(request, response);
-    }
-
-    @Override
-    public String getServletInfo() {
-        return "Servlet para el registro de nuevos usuarios";
+    private boolean blank(String value) {
+        return value == null || value.isBlank();
     }
 }

@@ -1,23 +1,11 @@
-<%-- 
-    Document   : panel
-    Created on : 3/09/2026, 3:04:44 p. m.
-    Author     : Jesus
---%>
-
-<%@page contentType="text/html" pageEncoding="UTF-8"%>
-<!DOCTYPE html>
-<html>
-    <head>
-        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-        <title>JSP Page</title>
-    </head>
-    <body>
-        <%
-            if(session.getAttribute("correo") == null){
-                response.sendRedirect("index.html");
-                return;
-            }
-        %>
-        <h1>Bienvenido, <%= session.getAttribute("nombre") %> <%= session.getAttribute("apellido") %></h1>
-    </body>
-</html>
+<%@page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@page import="Modelo.dto.DashboardVendedorDTO"%><%@page import="Modelo.dto.TiendaDTO"%><%@page import="Modelo.dto.SolicitudCreditoDTO"%><%@page import="java.util.List"%>
+<% if(session.getAttribute("idUsuario")==null){response.sendRedirect(request.getContextPath()+"/index.jsp");return;} DashboardVendedorDTO d=(DashboardVendedorDTO)request.getAttribute("dashboard"); List<TiendaDTO> tiendas=(List<TiendaDTO>)request.getAttribute("tiendas"); List<SolicitudCreditoDTO> pendientes=(List<SolicitudCreditoDTO>)request.getAttribute("solicitudesNuevas"); %>
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dashboard | DebiCom</title><link rel="stylesheet" href="<%=request.getContextPath()%>/vista/CSS/styles.css"></head>
+<body class="app-body"><div class="app-shell"><%@include file="WEB-INF/jspf/sidebar.jspf" %><main class="app-main">
+<section class="page-content"><div class="page-heading"><div><h1>Panel de control</h1><p>Resumen de la gestión de créditos de <%=session.getAttribute("nombre")%>.</p></div><a class="button primary" href="<%=request.getContextPath()%>/vendedor/creditos?estado=PENDIENTE">Revisar solicitudes</a></div>
+<div class="metric-row"><article class="metric"><span class="label">Total de clientes</span><strong><%=d==null?0:d.getTotalClientes()%></strong></article><article class="metric warning"><span class="label">Solicitudes nuevas</span><strong><%=d==null?0:d.getSolicitudesNuevas()%></strong></article><article class="metric"><span class="label">Pendientes</span><strong><%=d==null?0:d.getSolicitudesPendientes()%></strong></article><article class="metric success"><span class="label">Aprobadas</span><strong><%=d==null?0:d.getSolicitudesAprobadas()%></strong></article></div>
+<div class="metric-row"><article class="metric"><span class="label">Pagos recibidos</span><strong>$<%=d==null?"0.00":d.getPagosRecibidos().setScale(2).toPlainString()%></strong></article><article class="metric danger"><span class="label">Saldo por cobrar</span><strong>$<%=d==null?"0.00":d.getDeudaPendiente().setScale(2).toPlainString()%></strong></article></div>
+<article class="card"><h2>Acciones rápidas</h2><div class="table-wrap"><table><thead><tr><th>Cliente</th><th>Tienda</th><th>Monto</th><th>Acción</th></tr></thead><tbody><%if(pendientes==null||pendientes.isEmpty()){%><tr><td colspan="4">No hay solicitudes pendientes.</td></tr><%}else{int n=0;for(SolicitudCreditoDTO s:pendientes){if(n++>=5)break;%><tr><td><%=s.getCliente()%></td><td><%=s.getTienda()%></td><td>$<%=s.getMontoTotal()%></td><td><form method="post" action="<%=request.getContextPath()%>/vendedor/creditos/estado" style="display:inline"><input type="hidden" name="idSolicitud" value="<%=s.getIdSolicitud()%>"><input type="hidden" name="estado" value="APROBADO"><button class="button primary tiny">Aprobar</button></form> <a class="button secondary tiny" href="<%=request.getContextPath()%>/vendedor/creditos/detalle?id=<%=s.getIdSolicitud()%>">Detalles</a></td></tr><%}}%></tbody></table></div></article>
+<article class="card"><h2>Tiendas asignadas</h2><div class="table-wrap"><table><thead><tr><th>Tienda</th><th>NIT</th><th>Dirección</th><th>Acciones</th></tr></thead><tbody><% if(tiendas!=null) for(TiendaDTO t:tiendas){ %><tr><td><%=t.getNombreTienda()%></td><td><%=t.getNit()%></td><td><%=t.getDireccion()%></td><td><a class="button secondary tiny" href="<%=request.getContextPath()%>/vendedor/tienda?idTienda=<%=t.getIdTienda()%>">Gestionar</a> <a class="button secondary tiny" href="<%=request.getContextPath()%>/vendedor/inventario?idTienda=<%=t.getIdTienda()%>">Inventario</a></td></tr><% } %></tbody></table></div></article>
+</section></main></div></body></html>

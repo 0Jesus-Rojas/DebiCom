@@ -9,6 +9,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  *
@@ -16,6 +18,25 @@ import java.sql.SQLException;
  */
 public class UnidadDAO {
     private Conexion conect = new Conexion();
+
+
+    public List<Unidades> listarUnidades() {
+        List<Unidades> unidades = new ArrayList<>();
+        String sql = "SELECT id_unidad, nombre_unidad FROM unidades ORDER BY nombre_unidad";
+        try (Connection conn = conect.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                Unidades unidad = new Unidades();
+                unidad.setIdUnidad(rs.getInt("id_unidad"));
+                unidad.setNombreUnidad(rs.getString("nombre_unidad"));
+                unidades.add(unidad);
+            }
+            return unidades;
+        } catch (SQLException e) {
+            throw new IllegalStateException("No fue posible consultar las unidades.", e);
+        }
+    }
 
     public Unidades consultarUnidad(int idUnidad) {
         Connection conn = conect.getconn();
