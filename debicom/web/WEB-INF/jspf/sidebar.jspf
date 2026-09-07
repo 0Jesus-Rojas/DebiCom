@@ -1,0 +1,25 @@
+<%@page pageEncoding="UTF-8"%><% response.setCharacterEncoding("UTF-8"); String ctx=request.getContextPath(); Integer rol=(Integer)session.getAttribute("idRol"); %>
+<aside class="sidebar"><a class="logo" href="<%=ctx%><%=rol!=null && (rol==1 || rol==2 || rol==3) ? "/vendedor/dashboard" : "/comprador/estado-credito"%>">$ <b>Debi</b>Com</a><nav>
+<a class="nav-link" href="<%=ctx%>/vendedor/dashboard">▣ Dashboard</a>
+<a class="nav-link" href="<%=ctx%>/comprador/perfil">◉ Perfil</a>
+<a class="nav-link" href="<%=ctx%>/comprador/solicitar-credito">▦ Solicitar crédito</a>
+<a class="nav-link" href="<%=ctx%>/comprador/estado-credito">↗ Estado del crédito</a>
+<a class="nav-link" href="<%=ctx%>/comprador/historial-pagos">◷ Historial de pagos</a>
+<a class="nav-link" href="<%=ctx%>/comprador/deudas">ⓘ Consultar deudas pendientes</a>
+<% if(rol==null || rol==0){ %>
+<a class="nav-link" href="<%=ctx%>/comprador/registrarse-vendedor">★ Registrarse como vendedor</a>
+<% } %>
+<% if(rol!=null && (rol==1 || rol==2 || rol==3)){ %>
+<p class="nav-title">Administración</p>
+<a class="nav-link" href="<%=ctx%>/vendedor/tienda">⌂ Gestionar tienda</a>
+<a class="nav-link" href="<%=ctx%>/vendedor/creditos">✓ Aprobar/Rechazar créditos</a>
+<a class="nav-link" href="<%=ctx%>/vendedor/historial-creditos">▤ Historial de créditos</a>
+<a class="nav-link" href="<%=ctx%>/vendedor/historial-pagos">◷ Historial de pagos</a>
+<a class="nav-link" href="<%=ctx%>/vendedor/creditos/otorgar">＋ Otorgar crédito</a>
+<a class="nav-link" href="<%=ctx%>/vendedor/creditos-pendientes">◷ Créditos pendientes</a>
+<a class="nav-link" href="<%=ctx%>/vendedor/inventario">▥ Inventario</a>
+<% } %>
+<a class="nav-link" href="<%=ctx%>/logout">↪ Cerrar sesión</a>
+</nav></aside>
+
+<script src="<%=ctx%>/vista/JavaScript/main.js" defer></script>
