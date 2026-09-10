@@ -242,7 +242,7 @@ ENGINE = InnoDB;
 CREATE TABLE IF NOT EXISTS `debicom`.`facturas` (
   `id_factura` INT NOT NULL AUTO_INCREMENT,
   `numero_factura` VARCHAR(45) NOT NULL,
-  `id_solicitud` INT NOT NULL,
+  `id_solicitud` INT NULL,
   `id_cliente` INT NOT NULL,
   `id_tienda` INT NOT NULL,
   `subtotal` DECIMAL(12,2) NOT NULL,

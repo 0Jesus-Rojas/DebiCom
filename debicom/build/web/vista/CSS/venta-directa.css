@@ -1,0 +1,27 @@
+.venta-alert{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    margin-bottom:16px;
+}
+.venta-alert p{margin:5px 0 0}
+.venta-alert.error{border-left:4px solid #e74c3c}
+.venta-alert.success{border-left:4px solid #23a26d}
+.venta-search{min-width:220px}
+.venta-search label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}
+.venta-search input{width:100%;box-sizing:border-box}
+.venta-qty{max-width:100px}
+.venta-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+.modal{display:none;position:fixed;inset:0;z-index:120;align-items:center;justify-content:center;background:rgba(0,0,0,.68);padding:18px;box-sizing:border-box}
+.modal.active{display:flex}
+.modal-card{position:relative;width:min(500px,100%);background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:26px;box-shadow:0 24px 80px rgba(0,0,0,.45);color:var(--text)}
+.modal-close{position:absolute;right:12px;top:10px;border:0;background:transparent;color:var(--muted);font-size:28px;line-height:1;cursor:pointer;padding:4px 8px}
+.modal-close:hover{color:var(--text)}
+.modal-note{color:var(--muted);font-size:14px}
+@media(max-width:700px){
+    .venta-alert{align-items:stretch;flex-direction:column}
+    .venta-search{min-width:0;width:100%}
+    .venta-actions{flex-direction:column}
+    .venta-actions .button{width:100%}
+}

@@ -18,6 +18,7 @@
 <a class="nav-link" href="<%=ctx%>/vendedor/creditos/otorgar">＋ Otorgar crédito</a>
 <a class="nav-link" href="<%=ctx%>/vendedor/creditos-pendientes">◷ Créditos pendientes</a>
 <a class="nav-link" href="<%=ctx%>/vendedor/inventario">▥ Inventario</a>
+<a class="nav-link" href="<%=ctx%>/vendedor/ventas-directas">▣ Ventas directas</a>
 <% } %>
 <a class="nav-link" href="<%=ctx%>/logout">↪ Cerrar sesión</a>
 </nav></aside>

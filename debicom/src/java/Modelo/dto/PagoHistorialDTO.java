@@ -11,6 +11,7 @@ public class PagoHistorialDTO {
     private BigDecimal montoPagado;
     private LocalDateTime fechaPago;
     private String tipoPago;
+    private String origen;
     private String tienda;
     private String observaciones;
 
@@ -28,6 +29,8 @@ public class PagoHistorialDTO {
     public void setFechaPago(LocalDateTime fechaPago) { this.fechaPago = fechaPago; }
     public String getTipoPago() { return tipoPago; }
     public void setTipoPago(String tipoPago) { this.tipoPago = tipoPago; }
+    public String getOrigen() { return origen; }
+    public void setOrigen(String origen) { this.origen = origen; }
     public String getTienda() { return tienda; }
     public void setTienda(String tienda) { this.tienda = tienda; }
     public String getObservaciones() { return observaciones; }
