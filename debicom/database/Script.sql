@@ -178,14 +178,33 @@ CREATE TABLE IF NOT EXISTS `debicom`.`estados_solicitud` (
 ENGINE = InnoDB;
 
 -- -----------------------------------------------------
+-- Table `debicom`.`tipos_prestamo`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `debicom`.`tipos_prestamo` (
+  `id_tipo_prestamo` INT NOT NULL AUTO_INCREMENT,
+  `nombre_tipo` VARCHAR(20) NOT NULL,
+  PRIMARY KEY (`id_tipo_prestamo`),
+  UNIQUE KEY `uk_tipos_prestamo_nombre` (`nombre_tipo`)
+) ENGINE=InnoDB;
+
+INSERT INTO `debicom`.`tipos_prestamo` (`nombre_tipo`)
+SELECT 'CREDITO' FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM `debicom`.`tipos_prestamo` WHERE UPPER(`nombre_tipo`)='CREDITO');
+INSERT INTO `debicom`.`tipos_prestamo` (`nombre_tipo`)
+SELECT 'FIADO' FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM `debicom`.`tipos_prestamo` WHERE UPPER(`nombre_tipo`)='FIADO');
+
+-- -----------------------------------------------------
 -- Table `debicom`.`solicitudes_credito`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `debicom`.`solicitudes_credito` (
   `id_solicitud` INT NOT NULL AUTO_INCREMENT,
   `id_cliente` INT NOT NULL,
   `id_tienda` INT NOT NULL,
-  `monto_total` DECIMAL(12,2) NOT NULL,
-  `saldo_pendiente` DECIMAL(12,2) NOT NULL,
+  `monto_total` DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  `saldo_pendiente` DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  `cupo_aprobado` DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  `id_tipo_prestamo` INT NOT NULL DEFAULT 1,
   `id_estado_solicitud` INT NOT NULL DEFAULT 1, -- Reemplaza al ENUM
   `fecha_solicitud` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `fecha_aprobacion` DATETIME NULL,
@@ -195,6 +214,7 @@ CREATE TABLE IF NOT EXISTS `debicom`.`solicitudes_credito` (
   INDEX `fk_solicitudes_clientes_idx` (`id_cliente` ASC),
   INDEX `fk_solicitudes_tiendas_idx` (`id_tienda` ASC),
   INDEX `fk_solicitudes_estados_idx` (`id_estado_solicitud` ASC),
+  INDEX `fk_solicitudes_tipos_idx` (`id_tipo_prestamo` ASC),
   CONSTRAINT `fk_solicitudes_clientes`
     FOREIGN KEY (`id_cliente`)
     REFERENCES `debicom`.`clientes` (`id_cliente`),
@@ -203,7 +223,10 @@ CREATE TABLE IF NOT EXISTS `debicom`.`solicitudes_credito` (
     REFERENCES `debicom`.`tiendas` (`id_tienda`),
   CONSTRAINT `fk_solicitudes_estados`
     FOREIGN KEY (`id_estado_solicitud`)
-    REFERENCES `debicom`.`estados_solicitud` (`id_estado_solicitud`))
+    REFERENCES `debicom`.`estados_solicitud` (`id_estado_solicitud`),
+  CONSTRAINT `fk_solicitudes_tipos`
+    FOREIGN KEY (`id_tipo_prestamo`)
+    REFERENCES `debicom`.`tipos_prestamo` (`id_tipo_prestamo`))
 ENGINE = InnoDB;
 
 -- -----------------------------------------------------

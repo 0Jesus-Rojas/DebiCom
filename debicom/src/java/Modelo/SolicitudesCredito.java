@@ -15,6 +15,8 @@ public class SolicitudesCredito {
     private int idTienda;
     private float montoTotal;
     private float saldoPendiente;
+    private float cupoAprobado;
+    private int idTipoPrestamo;
     private int idEstadoSolicitud;
     private Date fechaSolicitud;
     private Date fechaAprovacion;
@@ -59,6 +61,22 @@ public class SolicitudesCredito {
 
     public void setSaldoPendiente(float saldoPendiente) {
         this.saldoPendiente = saldoPendiente;
+    }
+
+    public float getCupoAprobado() {
+        return cupoAprobado;
+    }
+
+    public void setCupoAprobado(float cupoAprobado) {
+        this.cupoAprobado = cupoAprobado;
+    }
+
+    public int getIdTipoPrestamo() {
+        return idTipoPrestamo;
+    }
+
+    public void setIdTipoPrestamo(int idTipoPrestamo) {
+        this.idTipoPrestamo = idTipoPrestamo;
     }
 
     public int getIdEstadoSolicitud() {

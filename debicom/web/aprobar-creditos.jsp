@@ -50,8 +50,8 @@
                     <small>Solicitud #<%=s.getIdSolicitud()%> · <%=s.getTienda()%></small>
                 </div>
                 <div>
-                    <span>Monto</span>
-                    <b>$<%=s.getMontoTotal()%></b>
+                    <span>Cupo solicitado</span>
+                    <b>$<%=s.getCupoAprobado()%></b>
                 </div>
                 <div>
                     <span>Saldo</span>

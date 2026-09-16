@@ -12,6 +12,9 @@ public class SolicitudCreditoDTO {
     private String cliente;
     private BigDecimal montoTotal;
     private BigDecimal saldoPendiente;
+    private BigDecimal cupoAprobado;
+    private int idTipoPrestamo;
+    private String tipoPrestamo;
     private String estado;
     private LocalDateTime fechaSolicitud;
     private LocalDateTime fechaAprobacion;
@@ -32,6 +35,12 @@ public class SolicitudCreditoDTO {
     public void setMontoTotal(BigDecimal montoTotal) { this.montoTotal = montoTotal; }
     public BigDecimal getSaldoPendiente() { return saldoPendiente; }
     public void setSaldoPendiente(BigDecimal saldoPendiente) { this.saldoPendiente = saldoPendiente; }
+    public BigDecimal getCupoAprobado() { return cupoAprobado; }
+    public void setCupoAprobado(BigDecimal cupoAprobado) { this.cupoAprobado = cupoAprobado; }
+    public int getIdTipoPrestamo() { return idTipoPrestamo; }
+    public void setIdTipoPrestamo(int idTipoPrestamo) { this.idTipoPrestamo = idTipoPrestamo; }
+    public String getTipoPrestamo() { return tipoPrestamo; }
+    public void setTipoPrestamo(String tipoPrestamo) { this.tipoPrestamo = tipoPrestamo; }
     public String getEstado() { return estado; }
     public void setEstado(String estado) { this.estado = estado; }
     public LocalDateTime getFechaSolicitud() { return fechaSolicitud; }

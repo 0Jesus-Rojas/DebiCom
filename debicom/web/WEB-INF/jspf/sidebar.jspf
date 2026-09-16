@@ -1,26 +1,41 @@
 <%@page pageEncoding="UTF-8"%><% response.setCharacterEncoding("UTF-8"); String ctx=request.getContextPath(); Integer rol=(Integer)session.getAttribute("idRol"); %>
-<aside class="sidebar"><a class="logo" href="<%=ctx%><%=rol!=null && (rol==1 || rol==2 || rol==3) ? "/vendedor/dashboard" : "/comprador/estado-credito"%>">$ <b>Debi</b>Com</a><nav>
-<a class="nav-link" href="<%=ctx%>/vendedor/dashboard">▣ Dashboard</a>
-<a class="nav-link" href="<%=ctx%>/comprador/perfil">◉ Perfil</a>
-<a class="nav-link" href="<%=ctx%>/comprador/solicitar-credito">▦ Solicitar crédito</a>
-<a class="nav-link" href="<%=ctx%>/comprador/estado-credito">↗ Estado del crédito</a>
-<a class="nav-link" href="<%=ctx%>/comprador/historial-pagos">◷ Historial de pagos</a>
-<a class="nav-link" href="<%=ctx%>/comprador/deudas">ⓘ Consultar deudas pendientes</a>
-<% if(rol==null || rol==0){ %>
-<a class="nav-link" href="<%=ctx%>/comprador/registrarse-vendedor">★ Registrarse como vendedor</a>
-<% } %>
-<% if(rol!=null && (rol==1 || rol==2 || rol==3)){ %>
-<p class="nav-title">Administración</p>
-<a class="nav-link" href="<%=ctx%>/vendedor/tienda">⌂ Gestionar tienda</a>
-<a class="nav-link" href="<%=ctx%>/vendedor/creditos">✓ Aprobar/Rechazar créditos</a>
-<a class="nav-link" href="<%=ctx%>/vendedor/historial-creditos">▤ Historial de créditos</a>
-<a class="nav-link" href="<%=ctx%>/vendedor/historial-pagos">◷ Historial de pagos</a>
-<a class="nav-link" href="<%=ctx%>/vendedor/creditos/otorgar">＋ Otorgar crédito</a>
-<a class="nav-link" href="<%=ctx%>/vendedor/creditos-pendientes">◷ Créditos pendientes</a>
-<a class="nav-link" href="<%=ctx%>/vendedor/inventario">▥ Inventario</a>
-<a class="nav-link" href="<%=ctx%>/vendedor/ventas-directas">▣ Ventas directas</a>
-<% } %>
-<a class="nav-link" href="<%=ctx%>/logout">↪ Cerrar sesión</a>
-</nav></aside>
-
+<header class="app-header">
+    <a class="app-header-logo" href="<%=ctx%><%=rol!=null && (rol==1 || rol==2 || rol==3) ? "/vendedor/dashboard" : "/comprador/estado-credito"%>" aria-label="Ir al inicio de DebiCom">
+        <span class="app-header-logo-mark">$</span><span><b>Debi</b>Com</span>
+    </a>
+    <div class="user-menu">
+        <button class="user-menu-trigger" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="userDropdown" title="Menú de usuario">
+            <span class="user-avatar" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"></circle><path d="M5.5 19c.7-3.1 3-4.8 6.5-4.8s5.8 1.7 6.5 4.8"></path></svg></span>
+            <svg class="user-menu-chevron" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 7.5 10 12.5 15 7.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="user-dropdown" id="userDropdown" role="menu" aria-hidden="true">
+            <a href="<%=ctx%>/comprador/perfil" role="menuitem">Perfil</a>
+            <a href="<%=ctx%>/logout" class="logout-link" data-logout-confirm role="menuitem">Cerrar sesión</a>
+        </div>
+    </div>
+</header>
+<aside class="sidebar">
+    <nav>
+        <p class="nav-title">Compras</p>
+        <a class="nav-link" href="<%=ctx%>/vendedor/dashboard">▣ Dashboard</a>
+        <a class="nav-link" href="<%=ctx%>/comprador/solicitar-credito">▦ Solicitar crédito</a>
+        <a class="nav-link" href="<%=ctx%>/comprador/estado-credito">↗ Estado del crédito</a>
+        <a class="nav-link" href="<%=ctx%>/comprador/historial-pagos">◷ Historial de pagos</a>
+        <a class="nav-link" href="<%=ctx%>/comprador/deudas">ⓘ Consultar deudas pendientes</a>
+        <% if(rol==null || rol==0){ %>
+        <a class="nav-link" href="<%=ctx%>/comprador/registrarse-vendedor">★ Registrarse como vendedor</a>
+        <% } %>
+        <% if(rol!=null && (rol==1 || rol==2 || rol==3)){ %>
+        <p class="nav-title">Administración</p>
+        <a class="nav-link" href="<%=ctx%>/vendedor/tienda">⌂ Gestionar tienda</a>
+        <a class="nav-link" href="<%=ctx%>/vendedor/inventario">▥ Inventario</a>
+        <a class="nav-link" href="<%=ctx%>/vendedor/ventas-directas">▣ Vender</a>
+        <a class="nav-link" href="<%=ctx%>/vendedor/creditos/otorgar">＋ Otorgar crédito</a>
+        <a class="nav-link" href="<%=ctx%>/vendedor/fiados/asignar">＋ Fiar</a>
+        <a class="nav-link" href="<%=ctx%>/vendedor/creditos">✓ Solicitudes</a>
+        <a class="nav-link" href="<%=ctx%>/vendedor/historial-creditos">▤ Créditos</a>
+        <a class="nav-link" href="<%=ctx%>/vendedor/historial-pagos">◷ Historial de pagos</a>
+        <% } %>
+    </nav>
+</aside>
 <script src="<%=ctx%>/vista/JavaScript/main.js" defer></script>

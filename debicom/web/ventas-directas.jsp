@@ -41,9 +41,6 @@ String ok = (String) request.getAttribute("ok");
 <div class="app-shell">
     <%@include file="WEB-INF/jspf/sidebar.jspf" %>
     <main class="app-main">
-        <div class="topbar">
-            <span class="topbar-context">Ventas directas</span>
-        </div>
         <section class="page-content">
             <div class="page-heading">
                 <div>

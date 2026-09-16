@@ -27,14 +27,54 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     initMobileSidebar();
+    initUserMenu();
+    initLogoutConfirmation();
     initStoreSearch();
     initTableFilters();
     initAuthFeedback();
 });
 
+
+function initUserMenu() {
+    const menu = document.querySelector(".user-menu");
+    const trigger = document.querySelector(".user-menu-trigger");
+    const dropdown = document.querySelector(".user-dropdown");
+
+    if (!menu || !trigger || !dropdown) return;
+
+    const closeMenu = () => {
+        menu.classList.remove("open");
+        trigger.setAttribute("aria-expanded", "false");
+        dropdown.setAttribute("aria-hidden", "true");
+    };
+
+    trigger.addEventListener("click", event => {
+        event.stopPropagation();
+        const open = !menu.classList.contains("open");
+        menu.classList.toggle("open", open);
+        trigger.setAttribute("aria-expanded", String(open));
+        dropdown.setAttribute("aria-hidden", String(!open));
+    });
+
+    dropdown.addEventListener("click", event => event.stopPropagation());
+    document.addEventListener("click", closeMenu);
+    document.addEventListener("keydown", event => {
+        if (event.key === "Escape") closeMenu();
+    });
+}
+
+function initLogoutConfirmation() {
+    document.querySelectorAll("[data-logout-confirm]").forEach(link => {
+        link.addEventListener("click", event => {
+            const confirmed = window.confirm("¿Realmente deseas cerrar sesión?");
+            if (!confirmed) event.preventDefault();
+        });
+    });
+}
+
 function initMobileSidebar() {
     const sidebar = document.querySelector(".sidebar");
-    const topbar = document.querySelector(".topbar");
+    const topbar = document.querySelector(".app-header") || document.querySelector(".topbar");
 
     if (!sidebar) return;
 

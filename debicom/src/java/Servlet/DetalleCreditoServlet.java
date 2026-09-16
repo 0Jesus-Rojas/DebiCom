@@ -21,8 +21,9 @@ public class DetalleCreditoServlet extends HttpServlet {
         if(id<=0){response.sendError(400,"ID de solicitud inválido.");return;}
         try{
             var detalle=dao.obtenerDetalleCredito(id,vendedor);
-            if(detalle==null){response.sendError(404,"Crédito no encontrado.");return;}
+            if(detalle==null){response.sendError(404,"Préstamo no encontrado.");return;}
             request.setAttribute("detalleCredito",detalle);
+            request.setAttribute("productosCredito", dao.listarProductosParaCredito(detalle.getSolicitud().getIdTienda(), vendedor));
             request.setAttribute("ok",request.getParameter("ok"));
             request.setAttribute("error",request.getParameter("error"));
             request.getRequestDispatcher("/estado-credito.jsp").forward(request,response);

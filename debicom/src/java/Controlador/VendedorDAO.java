@@ -48,7 +48,8 @@ public class VendedorDAO {
         String base = " FROM solicitudes_credito sc "
                 + "INNER JOIN tiendas t ON t.id_tienda = sc.id_tienda "
                 + "INNER JOIN estados_solicitud es ON es.id_estado_solicitud = sc.id_estado_solicitud "
-                + "WHERE t.id_vendedor = ? ";
+                + "INNER JOIN tipos_prestamo tp ON tp.id_tipo_prestamo=sc.id_tipo_prestamo "
+                + "WHERE t.id_vendedor = ? AND UPPER(tp.nombre_tipo)='CREDITO' ";
         DashboardVendedorDTO dto = new DashboardVendedorDTO();
         String sqlClientes = "SELECT COUNT(DISTINCT sc.id_cliente)" + base;
         String sqlNuevas = "SELECT COUNT(*)" + base + "AND UPPER(es.nombre_estado) = 'PENDIENTE' AND sc.fecha_solicitud >= DATE_SUB(CURRENT_TIMESTAMP, INTERVAL 7 DAY)";
@@ -59,7 +60,7 @@ public class VendedorDAO {
                 + "INNER JOIN tiendas t ON t.id_tienda = f.id_tienda WHERE t.id_vendedor = ?) "
                 + "+ (SELECT COALESCE(SUM(pp.monto_pagado),0) FROM pagos_presenciales pp "
                 + "WHERE pp.id_vendedor = ?)";
-        String sqlDeuda = "SELECT COALESCE(SUM(sc.saldo_pendiente),0)" + base + "AND sc.saldo_pendiente > 0 "
+        String sqlDeuda = "SELECT COALESCE(SUM(sc.saldo_pendiente),0) FROM solicitudes_credito sc INNER JOIN tiendas t ON t.id_tienda=sc.id_tienda INNER JOIN estados_solicitud es ON es.id_estado_solicitud=sc.id_estado_solicitud WHERE t.id_vendedor=? AND sc.saldo_pendiente>0 "
                 + "AND UPPER(es.nombre_estado) IN ('APROBADO','VENCIDO')";
         try (Connection conn = conexion.getConnection()) {
             dto.setTotalClientes(scalarLong(conn, sqlClientes, idVendedor));
@@ -85,9 +86,11 @@ public class VendedorDAO {
                 + "t.fecha_registro, CONCAT(u.nombre,' ',u.apellido) AS vendedor, "
                 + "COALESCE((SELECT SUM(f.total) FROM facturas f INNER JOIN estados_factura ef ON ef.id_estado_factura=f.id_estado_factura WHERE f.id_tienda=t.id_tienda AND UPPER(ef.nombre_estado) <> 'ANULADA'),0) AS ventas_totales, "
                 + "(SELECT COUNT(*) FROM solicitudes_credito sc INNER JOIN estados_solicitud es ON es.id_estado_solicitud=sc.id_estado_solicitud "
-                + " WHERE sc.id_tienda=t.id_tienda AND UPPER(es.nombre_estado)='APROBADO') AS creditos_otorgados, "
+                + " INNER JOIN tipos_prestamo tp ON tp.id_tipo_prestamo=sc.id_tipo_prestamo "
+                + " WHERE sc.id_tienda=t.id_tienda AND UPPER(tp.nombre_tipo)='CREDITO' AND UPPER(es.nombre_estado)='APROBADO') AS creditos_otorgados, "
                 + "(SELECT COUNT(DISTINCT sc.id_cliente) FROM solicitudes_credito sc INNER JOIN estados_solicitud es ON es.id_estado_solicitud=sc.id_estado_solicitud "
-                + " WHERE sc.id_tienda=t.id_tienda AND UPPER(es.nombre_estado)='APROBADO' AND sc.saldo_pendiente > 0) AS clientes_activos, "
+                + " INNER JOIN tipos_prestamo tp ON tp.id_tipo_prestamo=sc.id_tipo_prestamo "
+                + " WHERE sc.id_tienda=t.id_tienda AND UPPER(tp.nombre_tipo)='CREDITO' AND UPPER(es.nombre_estado)='APROBADO' AND sc.saldo_pendiente > 0) AS clientes_activos, "
                 + "(SELECT COUNT(*) FROM productos p WHERE p.id_tienda=t.id_tienda) AS total_productos "
                 + "FROM tiendas t INNER JOIN usuarios u ON u.id_usuario=t.id_vendedor "
                 + "WHERE t.id_tienda=? AND t.id_vendedor=?";
@@ -116,6 +119,7 @@ public class VendedorDAO {
     public List<SolicitudCreditoDTO> listarSolicitudesPendientes(int idVendedor) {
         String sql = "SELECT sc.id_solicitud, sc.id_cliente, sc.id_tienda, t.nombre_tienda, "
                 + "CONCAT(u.nombre,' ',u.apellido) AS cliente, sc.monto_total, sc.saldo_pendiente, "
+                + "sc.cupo_aprobado, sc.id_tipo_prestamo, tp.nombre_tipo AS tipo_prestamo, "
                 + "es.nombre_estado, sc.fecha_solicitud, sc.fecha_aprobacion, "
                 + "sc.fecha_vencimiento, sc.observaciones "
                 + "FROM solicitudes_credito sc "
@@ -123,7 +127,8 @@ public class VendedorDAO {
                 + "INNER JOIN clientes c ON c.id_cliente=sc.id_cliente "
                 + "INNER JOIN usuarios u ON u.id_usuario=c.id_usuario "
                 + "INNER JOIN estados_solicitud es ON es.id_estado_solicitud=sc.id_estado_solicitud "
-                + "WHERE t.id_vendedor=? "
+                + "INNER JOIN tipos_prestamo tp ON tp.id_tipo_prestamo=sc.id_tipo_prestamo "
+                + "WHERE t.id_vendedor=? AND UPPER(tp.nombre_tipo)='CREDITO' "
                 + "AND UPPER(es.nombre_estado)='PENDIENTE' "
                 + "ORDER BY sc.fecha_solicitud ASC, sc.id_solicitud ASC";
 
@@ -151,6 +156,7 @@ public class VendedorDAO {
     public List<SolicitudCreditoDTO> listarHistorialCreditos(int idVendedor) {
         String sql = "SELECT sc.id_solicitud, sc.id_cliente, sc.id_tienda, t.nombre_tienda, "
                 + "CONCAT(u.nombre,' ',u.apellido) AS cliente, sc.monto_total, sc.saldo_pendiente, "
+                + "sc.cupo_aprobado, sc.id_tipo_prestamo, tp.nombre_tipo AS tipo_prestamo, "
                 + "es.nombre_estado, sc.fecha_solicitud, sc.fecha_aprobacion, "
                 + "sc.fecha_vencimiento, sc.observaciones "
                 + "FROM solicitudes_credito sc "
@@ -158,7 +164,9 @@ public class VendedorDAO {
                 + "INNER JOIN clientes c ON c.id_cliente=sc.id_cliente "
                 + "INNER JOIN usuarios u ON u.id_usuario=c.id_usuario "
                 + "INNER JOIN estados_solicitud es ON es.id_estado_solicitud=sc.id_estado_solicitud "
+                + "INNER JOIN tipos_prestamo tp ON tp.id_tipo_prestamo=sc.id_tipo_prestamo "
                 + "WHERE t.id_vendedor=? "
+                + "AND UPPER(tp.nombre_tipo) IN ('CREDITO','FIADO') "
                 + "AND UPPER(es.nombre_estado) IN ('APROBADO','PAGADO','VENCIDO') "
                 + "ORDER BY sc.id_solicitud DESC";
 
@@ -232,12 +240,14 @@ public class VendedorDAO {
 
     public List<SolicitudCreditoDTO> listarSolicitudes(int idVendedor, String estado) {
         StringBuilder sql = new StringBuilder("SELECT sc.id_solicitud, sc.id_cliente, sc.id_tienda, t.nombre_tienda, "
-                + "CONCAT(u.nombre,' ',u.apellido) AS cliente, sc.monto_total, sc.saldo_pendiente, es.nombre_estado, "
+                + "CONCAT(u.nombre,' ',u.apellido) AS cliente, sc.monto_total, sc.saldo_pendiente, sc.cupo_aprobado, "
+                + "sc.id_tipo_prestamo, tp.nombre_tipo AS tipo_prestamo, es.nombre_estado, "
                 + "sc.fecha_solicitud, sc.fecha_aprobacion, sc.fecha_vencimiento, sc.observaciones "
                 + "FROM solicitudes_credito sc INNER JOIN tiendas t ON t.id_tienda=sc.id_tienda "
                 + "INNER JOIN clientes c ON c.id_cliente=sc.id_cliente INNER JOIN usuarios u ON u.id_usuario=c.id_usuario "
                 + "INNER JOIN estados_solicitud es ON es.id_estado_solicitud=sc.id_estado_solicitud "
-                + "WHERE t.id_vendedor=? ");
+                + "INNER JOIN tipos_prestamo tp ON tp.id_tipo_prestamo=sc.id_tipo_prestamo "
+                + "WHERE t.id_vendedor=? AND UPPER(tp.nombre_tipo)='CREDITO' ");
         if (estado != null && !estado.isBlank()) sql.append("AND UPPER(es.nombre_estado)=UPPER(?) ");
         sql.append("ORDER BY sc.fecha_solicitud DESC, sc.id_solicitud DESC");
         List<SolicitudCreditoDTO> result = new ArrayList<>();
@@ -255,12 +265,14 @@ public class VendedorDAO {
 
     public DetalleCreditoDTO obtenerDetalleCredito(int idSolicitud, int idVendedor) {
         String sql = "SELECT sc.id_solicitud, sc.id_cliente, sc.id_tienda, t.nombre_tienda, "
-                + "CONCAT(u.nombre,' ',u.apellido) AS cliente, sc.monto_total, sc.saldo_pendiente, es.nombre_estado, "
+                + "CONCAT(u.nombre,' ',u.apellido) AS cliente, sc.monto_total, sc.saldo_pendiente, sc.cupo_aprobado, "
+                + "sc.id_tipo_prestamo, tp.nombre_tipo AS tipo_prestamo, es.nombre_estado, "
                 + "sc.fecha_solicitud, sc.fecha_aprobacion, sc.fecha_vencimiento, sc.observaciones "
                 + "FROM solicitudes_credito sc INNER JOIN tiendas t ON t.id_tienda=sc.id_tienda "
                 + "INNER JOIN clientes c ON c.id_cliente=sc.id_cliente INNER JOIN usuarios u ON u.id_usuario=c.id_usuario "
                 + "INNER JOIN estados_solicitud es ON es.id_estado_solicitud=sc.id_estado_solicitud "
-                + "WHERE sc.id_solicitud=? AND t.id_vendedor=?";
+                + "INNER JOIN tipos_prestamo tp ON tp.id_tipo_prestamo=sc.id_tipo_prestamo "
+                + "WHERE sc.id_solicitud=? AND t.id_vendedor=? AND UPPER(tp.nombre_tipo) IN ('CREDITO','FIADO')";
         try (Connection conn = conexion.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, idSolicitud); ps.setInt(2, idVendedor);
             try (ResultSet rs = ps.executeQuery()) {
@@ -328,7 +340,9 @@ public class VendedorDAO {
                 + "INNER JOIN tiendas t ON t.id_tienda = sc.id_tienda "
                 + "INNER JOIN estados_solicitud es "
                 + "ON es.id_estado_solicitud = sc.id_estado_solicitud "
+                + "INNER JOIN tipos_prestamo tp ON tp.id_tipo_prestamo=sc.id_tipo_prestamo "
                 + "WHERE sc.id_solicitud = ? "
+                + "AND UPPER(tp.nombre_tipo)='CREDITO' "
                 + "AND t.id_vendedor = ? "
                 + "AND UPPER(es.nombre_estado) = 'PENDIENTE'";
 
@@ -415,7 +429,8 @@ public class VendedorDAO {
                 + "FROM solicitudes_credito sc INNER JOIN tiendas t ON t.id_tienda=sc.id_tienda "
                 + "INNER JOIN clientes c ON c.id_cliente=sc.id_cliente INNER JOIN usuarios u ON u.id_usuario=c.id_usuario "
                 + "INNER JOIN estados_solicitud es ON es.id_estado_solicitud=sc.id_estado_solicitud "
-                + "WHERE t.id_vendedor=? AND UPPER(es.nombre_estado) IN ('APROBADO','VENCIDO') AND sc.saldo_pendiente>0 "
+                + "INNER JOIN tipos_prestamo tp ON tp.id_tipo_prestamo=sc.id_tipo_prestamo "
+                + "WHERE t.id_vendedor=? AND UPPER(tp.nombre_tipo)='CREDITO' AND UPPER(es.nombre_estado) IN ('APROBADO','VENCIDO') AND sc.saldo_pendiente>0 "
                 + "ORDER BY sc.fecha_vencimiento ASC, sc.id_solicitud ASC";
         CreditosPendientesDTO result = new CreditosPendientesDTO();
         List<CreditoPendienteDTO> list = new ArrayList<>();
@@ -512,17 +527,86 @@ public class VendedorDAO {
     }
 
     /**
-     * Crea un crédito directo en estado APROBADO, registra sus detalles,
-     * descuenta inventario y sincroniza la deuda acumulada del comprador.
+     * Asigna un CREDITO como cupo aprobado. No selecciona productos ni
+     * descuenta inventario: el saldo se genera cuando el cupo sea consumido.
      */
-    public int otorgarCreditoDirecto(int idVendedor, int idTienda, int idCliente,
-                                     LocalDate fechaVencimiento, String observaciones,
-                                     List<ItemCreditoDTO> items) {
+    public int asignarCreditoCupo(int idVendedor, int idTienda, int idCliente,
+                                  BigDecimal cupo, LocalDate fechaVencimiento, String observaciones) {
         if (idVendedor <= 0 || idTienda <= 0 || idCliente <= 0) {
             throw new IllegalArgumentException("Vendedor, tienda y comprador son obligatorios.");
         }
-        if (fechaVencimiento == null || fechaVencimiento.isBefore(LocalDate.now())) {
-            throw new IllegalArgumentException("La fecha de vencimiento debe ser hoy o posterior.");
+        if (cupo == null || cupo.signum() <= 0) {
+            throw new IllegalArgumentException("El cupo debe ser mayor que cero.");
+        }
+        LocalDate hoy = LocalDate.now();
+        if (fechaVencimiento == null || fechaVencimiento.isBefore(hoy.plusDays(15))
+                || fechaVencimiento.isAfter(hoy.plusMonths(1))) {
+            throw new IllegalArgumentException("El plazo del crédito debe estar entre 15 días y 1 mes.");
+        }
+
+        String sqlTienda = "SELECT id_tienda FROM tiendas WHERE id_tienda=? AND id_vendedor=?";
+        String sqlCliente = "SELECT id_cliente FROM clientes WHERE id_cliente=?";
+        String sqlEstado = "SELECT id_estado_solicitud FROM estados_solicitud "
+                + "WHERE UPPER(nombre_estado)='APROBADO' LIMIT 1";
+        String sqlTipo = "SELECT id_tipo_prestamo FROM tipos_prestamo "
+                + "WHERE UPPER(nombre_tipo)='CREDITO' LIMIT 1";
+        String sqlInsert = "INSERT INTO solicitudes_credito "
+                + "(id_cliente,id_tienda,monto_total,saldo_pendiente,cupo_aprobado,id_tipo_prestamo,"
+                + "id_estado_solicitud,fecha_solicitud,fecha_aprobacion,fecha_vencimiento,observaciones) "
+                + "VALUES (?, ?, 0, 0, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?)";
+
+        try (Connection conn = conexion.getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                if (!existeId(conn, sqlTienda, idTienda, idVendedor)) {
+                    throw new SecurityException("La tienda no pertenece al vendedor autenticado.");
+                }
+                if (!existeId(conn, sqlCliente, idCliente)) {
+                    throw new IllegalArgumentException("El comprador no existe.");
+                }
+                int idEstadoAprobado = consultarIdUnico(conn, sqlEstado, "No existe el estado APROBADO.");
+                int idTipoCredito = consultarIdUnico(conn, sqlTipo, "No existe el tipo CREDITO.");
+
+                try (PreparedStatement ps = conn.prepareStatement(sqlInsert, java.sql.Statement.RETURN_GENERATED_KEYS)) {
+                    ps.setInt(1, idCliente);
+                    ps.setInt(2, idTienda);
+                    ps.setBigDecimal(3, cupo);
+                    ps.setInt(4, idTipoCredito);
+                    ps.setInt(5, idEstadoAprobado);
+                    ps.setDate(6, Date.valueOf(fechaVencimiento));
+                    if (observaciones == null || observaciones.isBlank()) {
+                        ps.setNull(7, java.sql.Types.VARCHAR);
+                    } else {
+                        ps.setString(7, observaciones.trim());
+                    }
+                    ps.executeUpdate();
+                    try (ResultSet rs = ps.getGeneratedKeys()) {
+                        if (!rs.next()) throw new SQLException("No se generó el ID del crédito.");
+                        int idSolicitud = rs.getInt(1);
+                        conn.commit();
+                        return idSolicitud;
+                    }
+                }
+            } catch (Exception e) {
+                try { conn.rollback(); } catch (SQLException rollback) { e.addSuppressed(rollback); }
+                if (e instanceof IllegalArgumentException iae) throw iae;
+                if (e instanceof SecurityException se) throw se;
+                throw new IllegalStateException("No fue posible asignar el cupo de crédito.", e);
+            } finally {
+                try { conn.setAutoCommit(true); } catch (SQLException ignored) {}
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("No fue posible iniciar la transacción del crédito.", e);
+        }
+    }
+
+    /**
+     * Consume productos de un crédito aprobado. El importe se acumula en el saldo
+     * del crédito sin superar el cupo aprobado, y cada producto descuenta inventario.
+     */
+    public void consumirCredito(int idVendedor, int idSolicitud, List<ItemCreditoDTO> items) {
+        if (idVendedor <= 0 || idSolicitud <= 0) {
+            throw new IllegalArgumentException("El crédito o vendedor no son válidos.");
         }
         if (items == null || items.isEmpty()) {
             throw new IllegalArgumentException("Debe seleccionar al menos un producto.");
@@ -533,91 +617,158 @@ public class VendedorDAO {
             if (item == null || item.getIdProducto() <= 0 || item.getCantidad() <= 0) {
                 throw new IllegalArgumentException("Cada producto debe tener una cantidad mayor que cero.");
             }
-            cantidades.merge(item.getIdProducto(), item.getCantidad(), Integer::sum);
+            cantidades.merge(item.getIdProducto(), item.getCantidad(), Math::addExact);
         }
 
-        String sqlTienda = "SELECT id_tienda FROM tiendas WHERE id_tienda=? AND id_vendedor=?";
-        String sqlExisteCliente = "SELECT id_cliente FROM clientes WHERE id_cliente=?";
-        String sqlEstado = "SELECT id_estado_solicitud FROM estados_solicitud WHERE UPPER(nombre_estado)='APROBADO' LIMIT 1";
-        String sqlSalida = "SELECT id_tipo_movimiento FROM tipos_movimiento WHERE UPPER(nombre_tipo)='SALIDA' LIMIT 1";
-        String sqlProducto = "SELECT p.id_producto, p.nombre, p.precio_unitario, p.stock FROM productos p "
-                + "INNER JOIN estados_producto ep ON ep.id_estado_producto=p.id_estado_producto "
-                + "WHERE p.id_producto=? AND p.id_tienda=? AND UPPER(ep.nombre_estado)='ACTIVO' FOR UPDATE";
-        String sqlInsertCredito = "INSERT INTO solicitudes_credito "
-                + "(id_cliente,id_tienda,monto_total,saldo_pendiente,id_estado_solicitud,fecha_solicitud,fecha_aprobacion,fecha_vencimiento,observaciones) "
-                + "VALUES (?,?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,?,?)";
-        String sqlInsertDetalle = "INSERT INTO detalle_solicitud_credito "
+        String sqlCredito = "SELECT sc.id_solicitud, sc.id_cliente, sc.id_tienda, sc.cupo_aprobado, "
+                + "sc.saldo_pendiente, es.nombre_estado, tp.nombre_tipo "
+                + "FROM solicitudes_credito sc "
+                + "INNER JOIN tiendas t ON t.id_tienda=sc.id_tienda "
+                + "INNER JOIN estados_solicitud es ON es.id_estado_solicitud=sc.id_estado_solicitud "
+                + "INNER JOIN tipos_prestamo tp ON tp.id_tipo_prestamo=sc.id_tipo_prestamo "
+                + "WHERE sc.id_solicitud=? AND t.id_vendedor=? FOR UPDATE";
+        String sqlProducto = "SELECT p.id_producto, p.nombre, p.precio_unitario, p.stock "
+                + "FROM productos p INNER JOIN estados_producto ep ON ep.id_estado_producto=p.id_estado_producto "
+                + "WHERE p.id_producto=? AND p.id_tienda=? AND UPPER(TRIM(ep.nombre_estado))='ACTIVO' FOR UPDATE";
+        String sqlDetalle = "INSERT INTO detalle_solicitud_credito "
                 + "(id_solicitud,id_producto,cantidad,precio_unitario,subtotal) VALUES (?,?,?,?,?)";
-        String sqlUpdateStock = "UPDATE productos SET stock=? WHERE id_producto=?";
-        String sqlMovimiento = "INSERT INTO movimientos_inventario(id_producto,id_tipo_movimiento,cantidad,motivo,fecha_movimiento) "
-                + "VALUES (?,?,?,? ,CURRENT_TIMESTAMP)";
-        String sqlActualizarCliente = "UPDATE clientes SET credito_actual=(SELECT COALESCE(SUM(saldo_pendiente),0) FROM solicitudes_credito WHERE id_cliente=? AND saldo_pendiente>0) WHERE id_cliente=?";
+        String sqlStock = "UPDATE productos SET stock=stock-? WHERE id_producto=? AND stock>=?";
+        String sqlMovimiento = "INSERT INTO movimientos_inventario "
+                + "(id_producto,id_tipo_movimiento,cantidad,motivo,fecha_movimiento) VALUES (?,?,?,?,CURRENT_TIMESTAMP)";
+        String sqlTipoSalida = "SELECT id_tipo_movimiento FROM tipos_movimiento "
+                + "WHERE UPPER(TRIM(nombre_tipo))='SALIDA' LIMIT 1";
+        String sqlUpdateCredito = "UPDATE solicitudes_credito SET monto_total=monto_total+?, "
+                + "saldo_pendiente=saldo_pendiente+? WHERE id_solicitud=?";
+        String sqlCliente = "UPDATE clientes SET credito_actual="
+                + "(SELECT COALESCE(SUM(saldo_pendiente),0) FROM solicitudes_credito "
+                + "WHERE id_cliente=(SELECT id_cliente FROM solicitudes_credito WHERE id_solicitud=?) "
+                + "AND saldo_pendiente>0) WHERE id_cliente=(SELECT id_cliente FROM solicitudes_credito WHERE id_solicitud=?)";
 
         try (Connection conn = conexion.getConnection()) {
             conn.setAutoCommit(false);
             try {
-                if (!existeId(conn, sqlTienda, idTienda, idVendedor)) {
-                    throw new SecurityException("La tienda no pertenece al vendedor autenticado.");
+                int idCliente;
+                int idTienda;
+                BigDecimal cupo;
+                BigDecimal saldoActual;
+                try (PreparedStatement ps = conn.prepareStatement(sqlCredito)) {
+                    ps.setInt(1, idSolicitud);
+                    ps.setInt(2, idVendedor);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (!rs.next()) {
+                            throw new IllegalArgumentException("El crédito no existe o no pertenece a la tienda del vendedor.");
+                        }
+                        if (!"CREDITO".equalsIgnoreCase(rs.getString("nombre_tipo"))) {
+                            throw new IllegalArgumentException("Solo se pueden consumir productos en créditos.");
+                        }
+                        if (!"APROBADO".equalsIgnoreCase(rs.getString("nombre_estado"))) {
+                            throw new IllegalArgumentException("El crédito debe estar aprobado para agregar productos.");
+                        }
+                        idCliente = rs.getInt("id_cliente");
+                        idTienda = rs.getInt("id_tienda");
+                        cupo = rs.getBigDecimal("cupo_aprobado");
+                        saldoActual = rs.getBigDecimal("saldo_pendiente");
+                    }
                 }
-                if (!existeId(conn, sqlExisteCliente, idCliente)) {
-                    throw new IllegalArgumentException("El comprador no existe.");
-                }
-                int idEstadoAprobado = consultarIdUnico(conn, sqlEstado, "No existe el estado APROBADO.");
-                int idTipoSalida = consultarIdUnico(conn, sqlSalida, "No existe el tipo de movimiento SALIDA.");
 
-                class ItemValido { int id; int cantidad; BigDecimal precio; BigDecimal subtotal; int stock; ItemValido(int id,int cantidad,BigDecimal precio,BigDecimal subtotal,int stock){this.id=id;this.cantidad=cantidad;this.precio=precio;this.subtotal=subtotal;this.stock=stock;} }
+                if (cupo == null) cupo = BigDecimal.ZERO;
+                if (saldoActual == null) saldoActual = BigDecimal.ZERO;
+                BigDecimal disponible = cupo.subtract(saldoActual);
+                if (disponible.signum() <= 0) {
+                    throw new IllegalArgumentException("El crédito ya no tiene cupo disponible.");
+                }
+
+                int idSalida = consultarIdUnico(conn, sqlTipoSalida,
+                        "No existe el tipo de movimiento SALIDA.");
+                BigDecimal total = BigDecimal.ZERO.setScale(2, java.math.RoundingMode.HALF_UP);
+
+                class ItemValido {
+                    int id, cantidad, stock;
+                    BigDecimal precio, subtotal;
+                    ItemValido(int id, int cantidad, int stock, BigDecimal precio, BigDecimal subtotal) {
+                        this.id=id; this.cantidad=cantidad; this.stock=stock; this.precio=precio; this.subtotal=subtotal;
+                    }
+                }
                 List<ItemValido> validos = new ArrayList<>();
-                BigDecimal total = BigDecimal.ZERO;
+
                 for (var entry : cantidades.entrySet()) {
-                    int idProducto = entry.getKey();
-                    int cantidad = entry.getValue();
                     try (PreparedStatement ps = conn.prepareStatement(sqlProducto)) {
-                        ps.setInt(1, idProducto); ps.setInt(2, idTienda);
+                        ps.setInt(1, entry.getKey());
+                        ps.setInt(2, idTienda);
                         try (ResultSet rs = ps.executeQuery()) {
-                            if (!rs.next()) throw new IllegalArgumentException("El producto #" + idProducto + " no está disponible en la tienda seleccionada.");
-                            BigDecimal precio = rs.getBigDecimal("precio_unitario");
+                            if (!rs.next()) {
+                                throw new IllegalArgumentException("El producto #" + entry.getKey() + " no está disponible en la tienda.");
+                            }
+                            int cantidad = entry.getValue();
                             int stock = rs.getInt("stock");
-                            if (cantidad > stock) throw new IllegalArgumentException("Stock insuficiente para el producto #" + idProducto + ". Disponible: " + stock + ".");
+                            if (cantidad > stock) {
+                                throw new IllegalArgumentException("Stock insuficiente para el producto #" + entry.getKey() + ". Disponible: " + stock + ".");
+                            }
+                            BigDecimal precio = rs.getBigDecimal("precio_unitario").setScale(2, java.math.RoundingMode.HALF_UP);
                             BigDecimal subtotal = precio.multiply(BigDecimal.valueOf(cantidad)).setScale(2, java.math.RoundingMode.HALF_UP);
-                            validos.add(new ItemValido(idProducto,cantidad,precio,subtotal,stock));
-                            total = total.add(subtotal);
+                            total = total.add(subtotal).setScale(2, java.math.RoundingMode.HALF_UP);
+                            validos.add(new ItemValido(entry.getKey(), cantidad, stock, precio, subtotal));
                         }
                     }
                 }
-                if (total.compareTo(BigDecimal.ZERO) <= 0) throw new IllegalArgumentException("El total del crédito debe ser mayor que cero.");
 
-                int idSolicitud;
-                try (PreparedStatement ps = conn.prepareStatement(sqlInsertCredito, java.sql.Statement.RETURN_GENERATED_KEYS)) {
-                    ps.setInt(1,idCliente); ps.setInt(2,idTienda); ps.setBigDecimal(3,total); ps.setBigDecimal(4,total); ps.setInt(5,idEstadoAprobado); ps.setDate(6,Date.valueOf(fechaVencimiento));
-                    if (observaciones == null || observaciones.isBlank()) ps.setNull(7, java.sql.Types.VARCHAR); else ps.setString(7, observaciones.trim());
-                    ps.executeUpdate();
-                    try (ResultSet rs=ps.getGeneratedKeys()) { if(!rs.next()) throw new SQLException("No se generó el ID del crédito."); idSolicitud=rs.getInt(1); }
+                if (total.compareTo(disponible) > 0) {
+                    throw new IllegalArgumentException("El total seleccionado supera el cupo disponible de $" + disponible.setScale(2));
                 }
 
                 for (ItemValido item : validos) {
-                    try (PreparedStatement ps = conn.prepareStatement(sqlInsertDetalle)) {
-                        ps.setInt(1,idSolicitud); ps.setInt(2,item.id); ps.setInt(3,item.cantidad); ps.setBigDecimal(4,item.precio); ps.setBigDecimal(5,item.subtotal); ps.executeUpdate();
+                    try (PreparedStatement ps = conn.prepareStatement(sqlDetalle)) {
+                        ps.setInt(1, idSolicitud);
+                        ps.setInt(2, item.id);
+                        ps.setInt(3, item.cantidad);
+                        ps.setBigDecimal(4, item.precio);
+                        ps.setBigDecimal(5, item.subtotal);
+                        if (ps.executeUpdate() != 1) {
+                            throw new SQLException("No se pudo guardar el detalle del crédito.");
+                        }
                     }
-                    try (PreparedStatement ps = conn.prepareStatement(sqlUpdateStock)) {
-                        ps.setInt(1,item.stock-item.cantidad); ps.setInt(2,item.id); if(ps.executeUpdate()!=1) throw new SQLException("No se pudo actualizar el inventario del producto #"+item.id+".");
+                    try (PreparedStatement ps = conn.prepareStatement(sqlStock)) {
+                        ps.setInt(1, item.cantidad);
+                        ps.setInt(2, item.id);
+                        ps.setInt(3, item.cantidad);
+                        if (ps.executeUpdate() != 1) {
+                            throw new SQLException("No se pudo actualizar el inventario del producto #" + item.id + ".");
+                        }
                     }
                     try (PreparedStatement ps = conn.prepareStatement(sqlMovimiento)) {
-                        ps.setInt(1,item.id); ps.setInt(2,idTipoSalida); ps.setInt(3,item.cantidad); ps.setString(4,"Venta a crédito #"+idSolicitud); ps.executeUpdate();
+                        ps.setInt(1, item.id);
+                        ps.setInt(2, idSalida);
+                        ps.setInt(3, item.cantidad);
+                        ps.setString(4, "Consumo crédito #" + idSolicitud);
+                        ps.executeUpdate();
                     }
                 }
 
-                try (PreparedStatement ps = conn.prepareStatement(sqlActualizarCliente)) {
-                    ps.setInt(1,idCliente); ps.setInt(2,idCliente); ps.executeUpdate();
+                try (PreparedStatement ps = conn.prepareStatement(sqlUpdateCredito)) {
+                    ps.setBigDecimal(1, total);
+                    ps.setBigDecimal(2, total);
+                    ps.setInt(3, idSolicitud);
+                    if (ps.executeUpdate() != 1) throw new SQLException("No se pudo actualizar el saldo del crédito.");
                 }
+
+                try (PreparedStatement ps = conn.prepareStatement(sqlCliente)) {
+                    ps.setInt(1, idSolicitud);
+                    ps.setInt(2, idSolicitud);
+                    ps.executeUpdate();
+                }
+
                 conn.commit();
-                return idSolicitud;
             } catch (Exception e) {
                 try { conn.rollback(); } catch (SQLException rollback) { e.addSuppressed(rollback); }
                 if (e instanceof IllegalArgumentException iae) throw iae;
                 if (e instanceof SecurityException se) throw se;
-                throw new IllegalStateException("No fue posible otorgar el crédito.", e);
-            } finally { conn.setAutoCommit(true); }
-        } catch (SQLException e) { throw new IllegalStateException("No fue posible iniciar la transacción del crédito.", e); }
+                throw new IllegalStateException("No fue posible agregar productos al crédito.", e);
+            } finally {
+                try { conn.setAutoCommit(true); } catch (SQLException ignored) {}
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("No fue posible iniciar la transacción de consumo del crédito.", e);
+        }
     }
 
     private boolean existeId(Connection conn, String sql, int id) throws SQLException {
@@ -691,7 +842,12 @@ public class VendedorDAO {
     private SolicitudCreditoDTO mapSolicitud(ResultSet rs) throws SQLException {
         SolicitudCreditoDTO dto = new SolicitudCreditoDTO(); dto.setIdSolicitud(rs.getInt("id_solicitud")); dto.setIdCliente(rs.getInt("id_cliente"));
         dto.setIdTienda(rs.getInt("id_tienda")); dto.setTienda(rs.getString("nombre_tienda")); dto.setCliente(rs.getString("cliente"));
-        dto.setMontoTotal(rs.getBigDecimal("monto_total")); dto.setSaldoPendiente(rs.getBigDecimal("saldo_pendiente")); dto.setEstado(rs.getString("nombre_estado"));
+        dto.setMontoTotal(rs.getBigDecimal("monto_total"));
+        dto.setSaldoPendiente(rs.getBigDecimal("saldo_pendiente"));
+        dto.setCupoAprobado(rs.getBigDecimal("cupo_aprobado"));
+        dto.setIdTipoPrestamo(rs.getInt("id_tipo_prestamo"));
+        dto.setTipoPrestamo(rs.getString("tipo_prestamo"));
+        dto.setEstado(rs.getString("nombre_estado"));
         Timestamp s=rs.getTimestamp("fecha_solicitud"); if(s!=null)dto.setFechaSolicitud(s.toLocalDateTime()); Timestamp a=rs.getTimestamp("fecha_aprobacion"); if(a!=null)dto.setFechaAprobacion(a.toLocalDateTime());
         Date v=rs.getDate("fecha_vencimiento"); if(v!=null)dto.setFechaVencimiento(v.toLocalDate()); dto.setObservaciones(rs.getString("observaciones")); return dto;
     }

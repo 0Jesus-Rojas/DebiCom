@@ -64,11 +64,14 @@ public class ReporteCompradorDAO {
 
     public List<DeudaPendienteDTO> listarDeudasPorUsuario(int idUsuario) {
         String sql = "SELECT sc.id_solicitud, COALESCE(f.id_factura, 0) AS id_factura, "
-                + "t.nombre_tienda, sc.monto_total, sc.saldo_pendiente, sc.fecha_vencimiento, es.nombre_estado "
+                + "t.nombre_tienda, "
+                + "CASE WHEN UPPER(tp.nombre_tipo)='CREDITO' THEN sc.cupo_aprobado ELSE sc.monto_total END AS monto_mostrar, "
+                + "sc.saldo_pendiente, sc.fecha_vencimiento, es.nombre_estado, tp.nombre_tipo AS tipo_prestamo "
                 + "FROM solicitudes_credito sc "
                 + "INNER JOIN clientes c ON c.id_cliente = sc.id_cliente "
                 + "INNER JOIN tiendas t ON t.id_tienda = sc.id_tienda "
                 + "INNER JOIN estados_solicitud es ON es.id_estado_solicitud = sc.id_estado_solicitud "
+                + "INNER JOIN tipos_prestamo tp ON tp.id_tipo_prestamo = sc.id_tipo_prestamo "
                 + "LEFT JOIN facturas f ON f.id_solicitud = sc.id_solicitud "
                 + "WHERE c.id_usuario = ? AND sc.saldo_pendiente > 0 "
                 + "AND UPPER(es.nombre_estado) = 'APROBADO' "
@@ -83,11 +86,12 @@ public class ReporteCompradorDAO {
                     dto.setIdSolicitud(rs.getInt("id_solicitud"));
                     dto.setIdFactura(rs.getInt("id_factura"));
                     dto.setTienda(rs.getString("nombre_tienda"));
-                    dto.setMontoOriginal(rs.getBigDecimal("monto_total"));
+                    dto.setMontoOriginal(rs.getBigDecimal("monto_mostrar"));
                     dto.setSaldoPendiente(rs.getBigDecimal("saldo_pendiente"));
                     Date date = rs.getDate("fecha_vencimiento");
                     if (date != null) dto.setFechaVencimiento(date.toLocalDate());
                     dto.setEstado(rs.getString("nombre_estado"));
+                    dto.setTipoPrestamo(rs.getString("tipo_prestamo"));
                     result.add(dto);
                 }
             }

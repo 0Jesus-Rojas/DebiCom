@@ -105,6 +105,25 @@ DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_unicode_ci;
 
 -- -----------------------------------------------------
+-- Table `debicom`.`tipos_prestamo`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `debicom`.`tipos_prestamo` (
+  `id_tipo_prestamo` INT(11) NOT NULL AUTO_INCREMENT,
+  `nombre_tipo` VARCHAR(20) NOT NULL,
+  PRIMARY KEY (`id_tipo_prestamo`),
+  UNIQUE INDEX `uk_tipos_prestamo_nombre` (`nombre_tipo` ASC))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_unicode_ci;
+
+INSERT INTO `debicom`.`tipos_prestamo` (`nombre_tipo`)
+SELECT 'CREDITO' FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM `debicom`.`tipos_prestamo` WHERE UPPER(`nombre_tipo`)='CREDITO');
+INSERT INTO `debicom`.`tipos_prestamo` (`nombre_tipo`)
+SELECT 'FIADO' FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM `debicom`.`tipos_prestamo` WHERE UPPER(`nombre_tipo`)='FIADO');
+
+-- -----------------------------------------------------
 -- Table `debicom`.`tiendas`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `debicom`.`tiendas` (
@@ -132,8 +151,10 @@ CREATE TABLE IF NOT EXISTS `debicom`.`solicitudes_credito` (
   `id_solicitud` INT(11) NOT NULL AUTO_INCREMENT,
   `id_cliente` INT(11) NOT NULL,
   `id_tienda` INT(11) NOT NULL,
-  `monto_total` DECIMAL(12,2) NOT NULL,
-  `saldo_pendiente` DECIMAL(12,2) NOT NULL,
+  `monto_total` DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  `saldo_pendiente` DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  `cupo_aprobado` DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  `id_tipo_prestamo` INT(11) NOT NULL DEFAULT 1,
   `id_estado_solicitud` INT(11) NOT NULL DEFAULT 1,
   `fecha_solicitud` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP(),
   `fecha_aprobacion` DATETIME NULL DEFAULT NULL,
@@ -143,6 +164,7 @@ CREATE TABLE IF NOT EXISTS `debicom`.`solicitudes_credito` (
   INDEX `fk_solicitudes_clientes_idx` (`id_cliente` ASC) ,
   INDEX `fk_solicitudes_tiendas_idx` (`id_tienda` ASC) ,
   INDEX `fk_solicitudes_estados_idx` (`id_estado_solicitud` ASC) ,
+  INDEX `fk_solicitudes_tipos_idx` (`id_tipo_prestamo` ASC) ,
   CONSTRAINT `fk_solicitudes_clientes`
     FOREIGN KEY (`id_cliente`)
     REFERENCES `debicom`.`clientes` (`id_cliente`),
@@ -151,7 +173,10 @@ CREATE TABLE IF NOT EXISTS `debicom`.`solicitudes_credito` (
     REFERENCES `debicom`.`estados_solicitud` (`id_estado_solicitud`),
   CONSTRAINT `fk_solicitudes_tiendas`
     FOREIGN KEY (`id_tienda`)
-    REFERENCES `debicom`.`tiendas` (`id_tienda`))
+    REFERENCES `debicom`.`tiendas` (`id_tienda`),
+  CONSTRAINT `fk_solicitudes_tipos`
+    FOREIGN KEY (`id_tipo_prestamo`)
+    REFERENCES `debicom`.`tipos_prestamo` (`id_tipo_prestamo`))
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_unicode_ci;
@@ -423,3 +448,6 @@ COLLATE = utf8mb4_unicode_ci;
 SET SQL_MODE=@OLD_SQL_MODE;
 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+
+ALTER TABLE facturas
+MODIFY id_solicitud INT(11) NULL;

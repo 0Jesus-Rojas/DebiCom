@@ -164,12 +164,16 @@ public class SolicitudCreditoServlet extends HttpServlet {
     }
 
     private LocalDate parseFechaVencimiento(HttpServletRequest request) {
+        LocalDate hoy = LocalDate.now();
+        LocalDate minimo = hoy.plusDays(15);
+        LocalDate maximo = hoy.plusMonths(1);
+
         String fecha = trim(request.getParameter("fechaVencimiento"));
         if (fecha != null) {
             try {
                 LocalDate value = LocalDate.parse(fecha);
-                if (value.isBefore(LocalDate.now())) {
-                    throw new IllegalArgumentException("La fecha de vencimiento no puede estar en el pasado.");
+                if (value.isBefore(minimo) || value.isAfter(maximo)) {
+                    throw new IllegalArgumentException("El plazo del crédito debe estar entre 15 días y 1 mes.");
                 }
                 return value;
             } catch (java.time.format.DateTimeParseException e) {
@@ -177,24 +181,26 @@ public class SolicitudCreditoServlet extends HttpServlet {
             }
         }
 
-        // Para mantener compatibilidad con el formulario actual, que usa plazo,
-        // si no llega una fecha calculamos un plazo por defecto de 30 días.
         String plazo = trim(request.getParameter("plazo"));
         if (plazo != null) {
-            int meses = extraerMeses(plazo);
-            return LocalDate.now().plusMonths(meses);
+            String normalizado = plazo.toLowerCase(java.util.Locale.ROOT);
+            LocalDate fechaSeleccionada;
+            if (normalizado.contains("15")) {
+                fechaSeleccionada = hoy.plusDays(15);
+            } else if (normalizado.contains("21")) {
+                fechaSeleccionada = hoy.plusDays(21);
+            } else if (normalizado.contains("30") || normalizado.contains("1 mes") || normalizado.contains("1mes")) {
+                fechaSeleccionada = maximo;
+            } else {
+                throw new IllegalArgumentException("El plazo del crédito debe ser de 15 días, 21 días o 1 mes.");
+            }
+            if (fechaSeleccionada.isBefore(minimo) || fechaSeleccionada.isAfter(maximo)) {
+                throw new IllegalArgumentException("El plazo del crédito seleccionado no es válido.");
+            }
+            return fechaSeleccionada;
         }
 
-        return LocalDate.now().plusDays(30);
-    }
-
-    private int extraerMeses(String plazo) {
-        String digits = plazo.replaceAll("[^0-9]", "");
-        if (digits.isBlank()) {
-            return 1;
-        }
-        int meses = Integer.parseInt(digits);
-        return meses > 0 ? meses : 1;
+        return maximo;
     }
 
     private String trim(String value) {

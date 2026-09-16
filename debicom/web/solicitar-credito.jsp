@@ -86,13 +86,10 @@
                     </label>
 
                     <label>Plazo para pagar
-                        <select name="plazo">
+                        <select name="plazo" required>
+                            <option value="15 días">15 días</option>
+                            <option value="21 días">21 días</option>
                             <option value="1 mes">1 mes</option>
-                            <option value="2 meses">2 meses</option>
-                            <option value="3 meses">3 meses</option>
-                            <option value="4 meses">4 meses</option>
-                            <option value="5 meses">5 meses</option>
-                            <option value="6 meses">6 meses</option>
                         </select>
                     </label>
 

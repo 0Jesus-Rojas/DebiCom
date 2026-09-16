@@ -11,6 +11,7 @@ public class DeudaPendienteDTO {
     private BigDecimal saldoPendiente;
     private LocalDate fechaVencimiento;
     private String estado;
+    private String tipoPrestamo;
 
     public int getIdSolicitud() { return idSolicitud; }
     public void setIdSolicitud(int idSolicitud) { this.idSolicitud = idSolicitud; }
@@ -26,4 +27,6 @@ public class DeudaPendienteDTO {
     public void setFechaVencimiento(LocalDate fechaVencimiento) { this.fechaVencimiento = fechaVencimiento; }
     public String getEstado() { return estado; }
     public void setEstado(String estado) { this.estado = estado; }
+    public String getTipoPrestamo() { return tipoPrestamo; }
+    public void setTipoPrestamo(String tipoPrestamo) { this.tipoPrestamo = tipoPrestamo; }
 }

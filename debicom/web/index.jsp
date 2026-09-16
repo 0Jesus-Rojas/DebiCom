@@ -24,7 +24,7 @@ ArrayList<TipoIdentificaciones> tipos
         <header class="navbar">
             <div class="brand">DebiCom</div>
             <button class="btn-open-modal" id="openModalBtn" type="button">
-                Iniciar Sesion / Registro
+                Iniciar Sesion
             </button>
         </header>
 

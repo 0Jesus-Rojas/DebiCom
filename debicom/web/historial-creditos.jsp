@@ -54,8 +54,9 @@
                         <tr>
                             <th>Crédito</th>
                             <th>Cliente</th>
+                            <th>Tipo de préstamo</th>
                             <th>Tienda</th>
-                            <th>Monto</th>
+                            <th>Cupo aprobado</th>
                             <th>Saldo pendiente</th>
                             <th>Fecha otorgamiento</th>
                             <th>Vencimiento</th>
@@ -68,7 +69,7 @@
                             if (historial == null || historial.isEmpty()) {
                         %>
                         <tr data-filter-empty>
-                            <td colspan="9">No hay créditos otorgados para mostrar.</td>
+                            <td colspan="10">No hay créditos o fiados otorgados para mostrar.</td>
                         </tr>
                         <%
                             } else {
@@ -77,8 +78,9 @@
                         <tr data-filter-value="<%=c.getIdSolicitud()%>">
                             <td>#<%=c.getIdSolicitud()%></td>
                             <td><%=c.getCliente()%></td>
+                            <td><span class="badge <%=c.getTipoPrestamo() == null ? "" : c.getTipoPrestamo().toLowerCase()%>"><%=c.getTipoPrestamo() == null ? "—" : c.getTipoPrestamo()%></span></td>
                             <td><%=c.getTienda()%></td>
-                            <td>$<%=c.getMontoTotal()%></td>
+                            <td>$<%=c.getCupoAprobado()%></td>
                             <td><strong>$<%=c.getSaldoPendiente()%></strong></td>
                             <td><%=c.getFechaAprobacion() != null
                                     ? c.getFechaAprobacion()

@@ -28,7 +28,8 @@ public class AutorizacionFilter implements Filter {
 
         if (idUsuario == null) {
             if (session != null) {
-                session.setAttribute("mensajeAcceso", "Tu sesión ha expirado. Inicia sesión nuevamente.");
+                session.setAttribute("mensajeAcceso",
+                        "Tu sesión ha expirado. Inicia sesión nuevamente.");
             }
             response.sendRedirect(request.getContextPath() + "/index.jsp");
             return;
